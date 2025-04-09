@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, LogOut, LogIn, User } from "lucide-react";
+import { Search, LogOut, LogIn, User, Settings, Film, Bookmark, Clock, Home as HomeIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSearch } from "@/hooks/useSearch";
 import { useAuth } from "@/hooks/use-auth";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +13,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 
 const NETFLIX_LOGO = () => (
@@ -103,22 +105,55 @@ const Navbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="focus:outline-none">
-                  <img 
-                    src={user.avatarUrl || DEFAULT_AVATAR} 
-                    alt={user.username} 
-                    className="w-8 h-8 rounded" 
-                  />
+                  <Avatar className="w-8 h-8 border-2 border-transparent hover:border-[#E50914] transition-all duration-200">
+                    <AvatarImage src={user.avatarUrl || DEFAULT_AVATAR} alt={user.username} />
+                    <AvatarFallback className="bg-[#333333] text-white">
+                      {user.username.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-[#141414] border-gray-700">
-                <DropdownMenuLabel className="text-white">{user.username}</DropdownMenuLabel>
+                <div className="flex items-center px-2 py-2">
+                  <Avatar className="w-10 h-10 mr-2">
+                    <AvatarImage src={user.avatarUrl || DEFAULT_AVATAR} alt={user.username} />
+                    <AvatarFallback className="bg-[#333333] text-white">
+                      {user.username.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-white font-medium">{user.username}</p>
+                    <p className="text-[#E5E5E5] text-xs">Netflix Member</p>
+                  </div>
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuGroup>
+                  <Link href="/">
+                    <DropdownMenuItem className="text-[#E5E5E5] hover:text-white cursor-pointer focus:bg-gray-800">
+                      <HomeIcon className="mr-2 h-4 w-4" />
+                      <span>Home</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/?category=my-list">
+                    <DropdownMenuItem className="text-[#E5E5E5] hover:text-white cursor-pointer focus:bg-gray-800">
+                      <Bookmark className="mr-2 h-4 w-4" />
+                      <span>My List</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/search">
+                    <DropdownMenuItem className="text-[#E5E5E5] hover:text-white cursor-pointer focus:bg-gray-800">
+                      <Search className="mr-2 h-4 w-4" />
+                      <span>Browse</span>
+                    </DropdownMenuItem>
+                  </Link>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator className="bg-gray-700" />
                 <DropdownMenuItem 
                   className="text-[#E5E5E5] hover:text-white cursor-pointer focus:bg-gray-800"
                   onClick={handleLogout}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>Sign Out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
