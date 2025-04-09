@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, LogOut, LogIn, User, Settings, Film, Bookmark, Clock, Home as HomeIcon } from "lucide-react";
+import { 
+  Search, LogOut, LogIn, User, Settings, Film, Bookmark, Clock, Home as HomeIcon,
+  TrendingUp, Tv, Menu as MenuIcon, X
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSearch } from "@/hooks/useSearch";
 import { useAuth } from "@/hooks/use-auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -15,6 +19,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
 
 const NETFLIX_LOGO = () => (
   <svg className="w-28 md:w-32" viewBox="0 0 111 30" fill="#E50914">
@@ -57,23 +69,94 @@ const Navbar = () => {
     });
   };
 
+  const isMobile = useIsMobile();
+
+  // Navigation links for both mobile and desktop
+  const navLinks = [
+    { href: "/", label: "Home", icon: <HomeIcon className="h-5 w-5 mr-3" /> },
+    { href: "/?category=tv-shows", label: "TV Shows", icon: <Tv className="h-5 w-5 mr-3" /> },
+    { href: "/?category=movies", label: "Movies", icon: <Film className="h-5 w-5 mr-3" /> },
+    { href: "/?category=new", label: "New & Popular", icon: <TrendingUp className="h-5 w-5 mr-3" /> },
+    { href: "/?category=my-list", label: "My List", icon: <Bookmark className="h-5 w-5 mr-3" /> }
+  ];
+
   return (
     <header className={`fixed top-0 w-full z-50 transition-colors duration-300 ${isScrolled ? 'bg-[#141414]' : 'bg-gradient-to-b from-black to-transparent'}`}>
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="flex items-center">
+          {/* Mobile Menu */}
+          <div className="md:hidden mr-3">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white hover:bg-transparent">
+                  <MenuIcon className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="bg-[#141414] border-r-gray-800 p-0 w-64">
+                <SheetHeader className="p-4 border-b border-gray-800">
+                  <SheetTitle className="text-white">
+                    <NETFLIX_LOGO />
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="py-4">
+                  <nav>
+                    <ul className="space-y-2">
+                      {navLinks.map((link) => (
+                        <li key={link.label}>
+                          <SheetClose asChild>
+                            <Link href={link.href} className="flex items-center px-4 py-3 text-[#E5E5E5] hover:bg-gray-800 hover:text-white w-full">
+                              {link.icon}
+                              <span>{link.label}</span>
+                            </Link>
+                          </SheetClose>
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
+                  {user && (
+                    <>
+                      <div className="border-t border-gray-800 my-4"></div>
+                      <div className="px-4">
+                        <Button 
+                          variant="destructive" 
+                          className="w-full bg-[#E50914] hover:bg-[#f6121d]"
+                          onClick={() => {
+                            handleLogout();
+                          }}
+                        >
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Sign Out
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          {/* Logo */}
           <Link href="/" className="cursor-pointer">
             <NETFLIX_LOGO />
           </Link>
+
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex ml-10">
             <ul className="flex">
-              <li className="mr-5"><Link href="/" className="text-white hover:text-[#E5E5E5]">Home</Link></li>
-              <li className="mr-5"><Link href="/?category=tv-shows" className="text-[#E5E5E5] hover:text-white">TV Shows</Link></li>
-              <li className="mr-5"><Link href="/?category=movies" className="text-[#E5E5E5] hover:text-white">Movies</Link></li>
-              <li className="mr-5"><Link href="/?category=new" className="text-[#E5E5E5] hover:text-white">New & Popular</Link></li>
-              <li><Link href="/?category=my-list" className="text-[#E5E5E5] hover:text-white">My List</Link></li>
+              {navLinks.map((link, index) => (
+                <li key={link.label} className={index < navLinks.length - 1 ? "mr-5" : ""}>
+                  <Link 
+                    href={link.href} 
+                    className={`${link.href === '/' ? 'text-white' : 'text-[#E5E5E5]'} hover:text-white`}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
         </div>
+        
         <div className="flex items-center">
           {/* Search */}
           {showSearch ? (
