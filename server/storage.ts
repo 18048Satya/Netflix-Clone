@@ -2,8 +2,19 @@ import { movies as moviesTable, users as usersTable, categories as categoriesTab
 import { moviesData } from "./data/movies";
 import { categoriesData } from "./data/categories";
 import { usersData } from "./data/users";
+import { connectToDatabase, getDb } from './mongodb';
+import { Collection, Db, ObjectId } from 'mongodb';
+import session from 'express-session';
+import { log } from './vite';
+import connectMongoDBSession from 'connect-mongodb-session';
 
 export interface IStorage {
+  // MongoDB collections
+  initializeDatabase(): Promise<void>;
+  
+  // Session store
+  sessionStore: session.Store;
+  
   // Movies
   getAllMovies(): Promise<Movie[]>;
   getMovie(id: number): Promise<Movie | undefined>;
@@ -29,195 +40,331 @@ export interface IStorage {
   createUser(userData: { username: string; password: string; avatarUrl?: string }): Promise<User>;
 }
 
-export class MemStorage implements IStorage {
-  private movies: Map<number, Movie>;
-  private users: Map<number, User>;
-  private categories: Map<number, Category>;
-  private progressMap: Map<string, Progress>;
-  
+export class MongoDBStorage implements IStorage {
+  private db: Db | null = null;
+  private usersCollection: Collection | null = null;
+  private moviesCollection: Collection | null = null;
+  private categoriesCollection: Collection | null = null;
+  private progressCollection: Collection | null = null;
+  sessionStore: session.Store;
+
   constructor() {
-    this.movies = new Map();
-    this.users = new Map();
-    this.categories = new Map();
-    this.progressMap = new Map();
-    
-    // Initialize with mock data
-    this.initializeData();
-  }
-  
-  private initializeData() {
-    // Initialize movies
-    moviesData.forEach((movie) => {
-      this.movies.set(movie.id, movie);
+    // Set up MongoDB session store
+    const MongoDBStore = connectMongoDBSession(session);
+    this.sessionStore = new MongoDBStore({
+      uri: `mongodb+srv://NETFLIX:${process.env.MONGODB_PASSWORD}@cluster0.ygvxw78.mongodb.net/netflix?retryWrites=true&w=majority&appName=Cluster0`,
+      collection: 'sessions'
     });
-    
-    // Initialize categories
-    categoriesData.forEach((category) => {
-      this.categories.set(category.id, category);
-    });
-    
-    // Initialize users
-    usersData.forEach((user) => {
-      this.users.set(user.id, user);
+
+    // Handle session store errors
+    this.sessionStore.on('error', (error: any) => {
+      log(`Session store error: ${error}`, 'mongodb');
     });
   }
-  
+
+  async initializeDatabase(): Promise<void> {
+    try {
+      // Connect to MongoDB
+      const db = await connectToDatabase();
+      this.db = db;
+
+      // Get collections
+      this.usersCollection = db.collection('users');
+      this.moviesCollection = db.collection('movies');
+      this.categoriesCollection = db.collection('categories');
+      this.progressCollection = db.collection('progress');
+
+      // Check if we need to initialize data
+      const movieCount = await this.moviesCollection.countDocuments();
+      if (movieCount === 0) {
+        log('Initializing database with sample data...', 'mongodb');
+        await this.seedData();
+      } else {
+        log('Database already contains data', 'mongodb');
+      }
+    } catch (error) {
+      console.error('Error initializing database:', error);
+      throw error;
+    }
+  }
+
+  private async seedData(): Promise<void> {
+    try {
+      // Insert movies
+      if (this.moviesCollection) {
+        const moviesWithObjectId = moviesData.map(movie => ({
+          ...movie,
+          _id: movie.id // Use existing id as _id for MongoDB
+        }));
+        await this.moviesCollection.insertMany(moviesWithObjectId);
+        log(`Inserted ${moviesData.length} movies`, 'mongodb');
+      }
+
+      // Insert categories
+      if (this.categoriesCollection) {
+        const categoriesWithObjectId = categoriesData.map(category => ({
+          ...category,
+          _id: category.id // Use existing id as _id for MongoDB
+        }));
+        await this.categoriesCollection.insertMany(categoriesWithObjectId);
+        log(`Inserted ${categoriesData.length} categories`, 'mongodb');
+      }
+
+      // Insert users
+      if (this.usersCollection) {
+        const usersWithObjectId = usersData.map(user => ({
+          ...user,
+          _id: user.id // Use existing id as _id for MongoDB
+        }));
+        await this.usersCollection.insertMany(usersWithObjectId);
+        log(`Inserted ${usersData.length} users`, 'mongodb');
+      }
+    } catch (error) {
+      console.error('Error seeding database:', error);
+      throw error;
+    }
+  }
+
   async getAllMovies(): Promise<Movie[]> {
-    return Array.from(this.movies.values());
+    if (!this.moviesCollection) throw new Error('Movies collection not initialized');
+    
+    const movies = await this.moviesCollection.find({}).toArray();
+    return movies.map(movie => ({
+      ...movie,
+      id: movie._id, // Convert _id to id for client
+    })) as Movie[];
   }
-  
+
   async getMovie(id: number): Promise<Movie | undefined> {
-    return this.movies.get(id);
+    if (!this.moviesCollection) throw new Error('Movies collection not initialized');
+    
+    const movie = await this.moviesCollection.findOne({ _id: id });
+    if (!movie) return undefined;
+    
+    return {
+      ...movie,
+      id: movie._id, // Convert _id to id for client
+    } as Movie;
   }
-  
+
   async getFeaturedMovie(): Promise<Movie | undefined> {
-    return Array.from(this.movies.values()).find((movie) => movie.isFeatured);
+    if (!this.moviesCollection) throw new Error('Movies collection not initialized');
+    
+    const movie = await this.moviesCollection.findOne({ isFeatured: true });
+    if (!movie) return undefined;
+    
+    return {
+      ...movie,
+      id: movie._id, // Convert _id to id for client
+    } as Movie;
   }
-  
+
   async getSimilarMovies(id: number): Promise<Movie[]> {
-    const movie = this.movies.get(id);
+    if (!this.moviesCollection) throw new Error('Movies collection not initialized');
     
-    if (!movie) {
-      return [];
-    }
+    // First get the movie to find its categories
+    const movie = await this.getMovie(id);
+    if (!movie) return [];
     
-    // Get movies that share categories with the given movie
-    return Array.from(this.movies.values())
-      .filter((m) => m.id !== id && m.categories.some((cat) => movie.categories.includes(cat)))
-      .slice(0, 6);
+    // Find movies with similar categories
+    const similarMovies = await this.moviesCollection.find({
+      _id: { $ne: id },
+      categories: { $elemMatch: { $in: movie.categories } }
+    }).limit(6).toArray();
+    
+    return similarMovies.map(movie => ({
+      ...movie,
+      id: movie._id, // Convert _id to id for client
+    })) as Movie[];
   }
-  
+
   async searchMovies(query: string): Promise<Movie[]> {
-    if (!query) {
-      return [];
-    }
+    if (!this.moviesCollection) throw new Error('Movies collection not initialized');
+    if (!query) return [];
     
     const lowerQuery = query.toLowerCase();
     
-    return Array.from(this.movies.values()).filter((movie) => 
-      movie.title.toLowerCase().includes(lowerQuery) || 
-      movie.description.toLowerCase().includes(lowerQuery) ||
-      movie.categories.some((cat) => cat.toLowerCase().includes(lowerQuery))
-    );
+    // Search for movies using text search or regex
+    const movies = await this.moviesCollection.find({
+      $or: [
+        { title: { $regex: lowerQuery, $options: 'i' } },
+        { description: { $regex: lowerQuery, $options: 'i' } },
+        { categories: { $elemMatch: { $regex: lowerQuery, $options: 'i' } } }
+      ]
+    }).toArray();
+    
+    return movies.map(movie => ({
+      ...movie,
+      id: movie._id, // Convert _id to id for client
+    })) as Movie[];
   }
-  
+
   async getAllCategories(): Promise<any[]> {
-    const categoriesWithMovies = [];
+    if (!this.categoriesCollection || !this.moviesCollection) {
+      throw new Error('Categories or Movies collections not initialized');
+    }
     
-    for (const category of this.categories.values()) {
-      const categoryMovies = Array.from(this.movies.values())
-        .filter((movie) => movie.categories.includes(category.name));
+    const categories = await this.categoriesCollection.find({}).toArray();
+    const movies = await this.getAllMovies();
+    
+    // Add movies to each category
+    return Promise.all(categories.map(async (category) => {
+      const categoryMovies = movies.filter(movie => 
+        movie.categories.includes(category.name)
+      );
       
-      categoriesWithMovies.push({
+      return {
         ...category,
+        id: category._id, // Convert _id to id for client
         movies: categoryMovies,
-      });
-    }
-    
-    return categoriesWithMovies;
+      };
+    }));
   }
-  
+
   async getMyList(userId: number): Promise<Movie[]> {
-    const user = this.users.get(userId);
-    
-    if (!user || !user.myList) {
-      return [];
+    if (!this.usersCollection || !this.moviesCollection) {
+      throw new Error('Users or Movies collections not initialized');
     }
     
-    return user.myList
-      .map((movieId) => this.movies.get(movieId))
-      .filter((movie): movie is Movie => !!movie);
+    // Get the user
+    const user = await this.usersCollection.findOne({ _id: userId });
+    if (!user || !user.myList || user.myList.length === 0) return [];
+    
+    // Get movies in the user's list
+    const movies = await this.moviesCollection.find({
+      _id: { $in: user.myList }
+    }).toArray();
+    
+    return movies.map(movie => ({
+      ...movie,
+      id: movie._id, // Convert _id to id for client
+    })) as Movie[];
   }
-  
+
   async addToMyList(userId: number, movieId: number): Promise<void> {
-    const user = this.users.get(userId);
-    
-    if (!user) {
-      throw new Error("User not found");
+    if (!this.usersCollection || !this.moviesCollection) {
+      throw new Error('Users or Movies collections not initialized');
     }
     
-    if (!this.movies.has(movieId)) {
-      throw new Error("Movie not found");
-    }
+    // Check if movie exists
+    const movie = await this.moviesCollection.findOne({ _id: movieId });
+    if (!movie) throw new Error('Movie not found');
     
-    if (!user.myList) {
-      user.myList = [];
-    }
-    
-    if (!user.myList.includes(movieId)) {
-      user.myList.push(movieId);
-    }
-  }
-  
-  async removeFromMyList(userId: number, movieId: number): Promise<void> {
-    const user = this.users.get(userId);
-    
-    if (!user || !user.myList) {
-      return;
-    }
-    
-    user.myList = user.myList.filter((id) => id !== movieId);
-  }
-  
-  async getProgressList(userId: number): Promise<Movie[]> {
-    const moviesWithProgress = [];
-    
-    for (const [key, progress] of this.progressMap.entries()) {
-      if (progress.userId === userId) {
-        const movie = this.movies.get(progress.movieId);
-        
-        if (movie) {
-          moviesWithProgress.push({
-            ...movie,
-            progress: {
-              progressPercentage: progress.progressPercentage,
-              lastWatched: progress.lastWatched,
-            },
-          });
-        }
-      }
-    }
-    
-    return moviesWithProgress;
-  }
-  
-  async saveProgress(userId: number, movieId: number, progressPercentage: number, lastWatched: number): Promise<void> {
-    const key = `${userId}-${movieId}`;
-    
-    this.progressMap.set(key, {
-      userId,
-      movieId,
-      progressPercentage,
-      lastWatched,
-    });
-  }
-  
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-  
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username.toLowerCase() === username.toLowerCase(),
+    // Add movie to user's list if not already there
+    await this.usersCollection.updateOne(
+      { _id: userId },
+      { $addToSet: { myList: movieId } }, // $addToSet ensures no duplicates
+      { upsert: false }
     );
+  }
+
+  async removeFromMyList(userId: number, movieId: number): Promise<void> {
+    if (!this.usersCollection) throw new Error('Users collection not initialized');
+    
+    // Remove movie from user's list
+    await this.usersCollection.updateOne(
+      { _id: userId },
+      { $pull: { myList: movieId } }
+    );
+  }
+
+  async getProgressList(userId: number): Promise<Movie[]> {
+    if (!this.progressCollection || !this.moviesCollection) {
+      throw new Error('Progress or Movies collections not initialized');
+    }
+    
+    // Get progress entries for this user
+    const progressEntries = await this.progressCollection.find({ userId }).toArray();
+    if (progressEntries.length === 0) return [];
+    
+    // Get the movie details and merge with progress
+    const moviesWithProgress = await Promise.all(progressEntries.map(async (progress) => {
+      const movie = await this.getMovie(progress.movieId);
+      if (!movie) return null;
+      
+      return {
+        ...movie,
+        progress: {
+          progressPercentage: progress.progressPercentage,
+          lastWatched: progress.lastWatched,
+        },
+      };
+    }));
+    
+    // Filter out any null results (movies that weren't found)
+    return moviesWithProgress.filter((movie): movie is Movie => !!movie);
+  }
+
+  async saveProgress(userId: number, movieId: number, progressPercentage: number, lastWatched: number): Promise<void> {
+    if (!this.progressCollection) throw new Error('Progress collection not initialized');
+    
+    // Update progress document or create if it doesn't exist
+    await this.progressCollection.updateOne(
+      { userId, movieId },
+      { 
+        $set: { 
+          progressPercentage, 
+          lastWatched 
+        } 
+      },
+      { upsert: true }
+    );
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    if (!this.usersCollection) throw new Error('Users collection not initialized');
+    
+    const user = await this.usersCollection.findOne({ _id: id });
+    if (!user) return undefined;
+    
+    return {
+      ...user,
+      id: user._id, // Convert _id to id for client
+    } as User;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    if (!this.usersCollection) throw new Error('Users collection not initialized');
+    
+    const user = await this.usersCollection.findOne({ 
+      username: { $regex: new RegExp(`^${username}$`, 'i') } // Case-insensitive match
+    });
+    
+    if (!user) return undefined;
+    
+    return {
+      ...user,
+      id: user._id, // Convert _id to id for client
+    } as User;
   }
 
   async createUser(userData: { username: string; password: string; avatarUrl?: string }): Promise<User> {
-    // Generate a new user ID (max ID + 1)
-    const maxId = Math.max(0, ...Array.from(this.users.keys()));
-    const newId = maxId + 1;
+    if (!this.usersCollection) throw new Error('Users collection not initialized');
     
-    const newUser: User = {
+    // Check if username already exists
+    const existingUser = await this.getUserByUsername(userData.username);
+    if (existingUser) throw new Error('Username already exists');
+    
+    // Generate a unique ID
+    const maxUserDoc = await this.usersCollection.find().sort({ _id: -1 }).limit(1).toArray();
+    const maxId = maxUserDoc.length > 0 ? maxUserDoc[0]._id : 0;
+    const newId = Number(maxId) + 1;
+    
+    // Create the new user document
+    const newUser = {
+      _id: newId,
       id: newId,
       username: userData.username,
       password: userData.password,
-      avatarUrl: userData.avatarUrl,
+      avatarUrl: userData.avatarUrl || null,
       myList: [],
     };
     
-    this.users.set(newId, newUser);
-    return newUser;
+    // Insert the new user
+    await this.usersCollection.insertOne(newUser);
+    
+    return newUser as User;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new MongoDBStorage();

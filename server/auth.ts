@@ -36,8 +36,8 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
-    // Use memory store for simplicity
-    store: new session.MemoryStore(),
+    // Use MongoDB session store
+    store: storage.sessionStore,
   };
 
   app.set("trust proxy", 1);
