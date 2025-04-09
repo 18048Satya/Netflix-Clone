@@ -85,6 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Logged out",
         description: "You have been logged out successfully",
       });
+      // Note: We don't redirect here directly as we want to handle it
+      // in the component that calls logoutMutation for better control
     },
     onError: (error: Error) => {
       toast({

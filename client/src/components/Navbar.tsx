@@ -47,8 +47,11 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    logoutMutation.mutate();
-    setLocation('/auth');
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        setLocation('/auth');
+      }
+    });
   };
 
   return (
