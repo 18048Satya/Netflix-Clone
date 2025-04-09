@@ -29,17 +29,23 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "netflix-clone-secret",
     resave: false,
     saveUninitialized: false,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      secure: isProduction, // Use secure cookies in production
+      httpOnly: true, // Prevents JavaScript from reading the cookie
+      sameSite: isProduction ? 'none' : 'lax', // Required for cross-site cookies in production
     },
     // Use MongoDB session store
     store: storage.sessionStore,
   };
 
+  // Required for apps running behind proxies
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
   app.use(passport.initialize());

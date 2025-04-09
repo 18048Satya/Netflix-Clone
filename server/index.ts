@@ -2,8 +2,26 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
+import cors from 'cors';
 
 const app = express();
+
+// CORS Configuration
+const corsOptions = {
+  // Allow requests from any origin when in development
+  // In production, you should specify the exact origins
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.ALLOWED_ORIGINS?.split(',') || 'https://your-production-frontend-domain.com'
+    : true,
+  credentials: true, // Allow cookies and authentication headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
