@@ -83,12 +83,12 @@ const Navbar = () => {
   return (
     <header className={`fixed top-0 w-full z-50 transition-colors duration-300 ${isScrolled ? 'bg-[#141414]' : 'bg-gradient-to-b from-black to-transparent'}`}>
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center">
+        <div className="flex items-center flex-shrink-0">
           {/* Mobile Menu */}
-          <div className="md:hidden mr-3">
+          <div className="md:hidden mr-3 flex-shrink-0">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-transparent">
+                <Button variant="ghost" size="icon" className="text-white hover:bg-transparent h-10 w-10 p-0">
                   <MenuIcon className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
@@ -136,7 +136,7 @@ const Navbar = () => {
           </div>
 
           {/* Logo */}
-          <Link href="/" className="cursor-pointer">
+          <Link href="/" className="cursor-pointer flex-shrink-0">
             <NETFLIX_LOGO />
           </Link>
 
@@ -157,14 +157,14 @@ const Navbar = () => {
           </nav>
         </div>
         
-        <div className="flex items-center">
+        <div className="flex items-center flex-shrink-0">
           {/* Search */}
           {showSearch ? (
             <form onSubmit={onSearchSubmit} className="relative mr-4">
               <Input
                 type="text"
                 placeholder="Search"
-                className="bg-black bg-opacity-50 border border-gray-600 text-white pl-8 pr-3 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#E50914]"
+                className="bg-black bg-opacity-50 border border-gray-600 text-white pl-8 pr-3 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#E50914] w-full max-w-[180px] md:max-w-none"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
@@ -177,7 +177,7 @@ const Navbar = () => {
           ) : (
             <button 
               onClick={() => setShowSearch(true)} 
-              className="mr-4 text-white hover:text-gray-300"
+              className="mr-4 text-white hover:text-gray-300 flex-shrink-0"
             >
               <Search className="h-5 w-5" />
             </button>
@@ -187,7 +187,7 @@ const Navbar = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="focus:outline-none">
+                <button className="focus:outline-none flex-shrink-0">
                   <Avatar className="w-8 h-8 border-2 border-transparent hover:border-[#E50914] transition-all duration-200">
                     <AvatarImage src={user.avatarUrl || DEFAULT_AVATAR} alt={user.username} />
                     <AvatarFallback className="bg-[#333333] text-white">
@@ -242,13 +242,13 @@ const Navbar = () => {
             </DropdownMenu>
           ) : (
             <div className="flex items-center">
-              <Link href="/auth" className="mr-2">
+              <Link href="/auth" className="mr-2 flex-shrink-0">
                 <Button 
                   variant="ghost" 
-                  className="text-white hover:text-[#E5E5E5] hover:bg-transparent"
+                  className="text-white hover:text-[#E5E5E5] hover:bg-transparent px-3 py-1 h-auto min-w-0"
                 >
                   <LogIn className="mr-2 h-4 w-4" />
-                  Login
+                  <span className="whitespace-nowrap">Login</span>
                 </Button>
               </Link>
             </div>

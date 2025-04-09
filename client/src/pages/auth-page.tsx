@@ -97,7 +97,7 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen bg-black flex flex-col md:flex-row">
       {/* Left column - Auth forms */}
-      <div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
+      <div className="w-full md:w-1/2 p-6 pt-24 md:p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">
