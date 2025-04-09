@@ -9,11 +9,16 @@ import AuthPage from "@/pages/auth-page";
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import CategoryPage from "@/pages/CategoryPage";
 
 function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={Home} />
+      <ProtectedRoute path="/tv-shows" component={() => <CategoryPage categoryType="tv-shows" />} />
+      <ProtectedRoute path="/movies" component={() => <CategoryPage categoryType="movies" />} />
+      <ProtectedRoute path="/new" component={() => <CategoryPage categoryType="new" />} />
+      <ProtectedRoute path="/my-list" component={() => <CategoryPage categoryType="my-list" />} />
       <ProtectedRoute path="/movie/:id" component={MovieDetail} />
       <ProtectedRoute path="/watch/:id" component={Watch} />
       <ProtectedRoute path="/search" component={Search} />

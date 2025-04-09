@@ -74,10 +74,10 @@ const Navbar = () => {
   // Navigation links for both mobile and desktop
   const navLinks = [
     { href: "/", label: "Home", icon: <HomeIcon className="h-5 w-5 mr-3" /> },
-    { href: "/?category=tv-shows", label: "TV Shows", icon: <Tv className="h-5 w-5 mr-3" /> },
-    { href: "/?category=movies", label: "Movies", icon: <Film className="h-5 w-5 mr-3" /> },
-    { href: "/?category=new", label: "New & Popular", icon: <TrendingUp className="h-5 w-5 mr-3" /> },
-    { href: "/?category=my-list", label: "My List", icon: <Bookmark className="h-5 w-5 mr-3" /> }
+    { href: "/tv-shows", label: "TV Shows", icon: <Tv className="h-5 w-5 mr-3" /> },
+    { href: "/movies", label: "Movies", icon: <Film className="h-5 w-5 mr-3" /> },
+    { href: "/new", label: "New & Popular", icon: <TrendingUp className="h-5 w-5 mr-3" /> },
+    { href: "/my-list", label: "My List", icon: <Bookmark className="h-5 w-5 mr-3" /> }
   ];
 
   return (
@@ -217,7 +217,7 @@ const Navbar = () => {
                       <span>Home</span>
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/?category=my-list">
+                  <Link href="/my-list">
                     <DropdownMenuItem className="text-[#E5E5E5] hover:text-white cursor-pointer focus:bg-gray-800">
                       <Bookmark className="mr-2 h-4 w-4" />
                       <span>My List</span>
