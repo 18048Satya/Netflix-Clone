@@ -69,7 +69,8 @@ const AuthPage = () => {
   const onLoginSubmit = async (data: LoginFormData) => {
     loginMutation.mutate(data, {
       onSuccess: () => {
-        setLocation('/');
+        // Use window.location to force a full page refresh
+        window.location.href = '/';
       }
     });
   };
@@ -79,7 +80,8 @@ const AuthPage = () => {
     const { confirmPassword, ...userData } = data;
     registerMutation.mutate(userData, {
       onSuccess: () => {
-        setLocation('/');
+        // Use window.location to force a full page refresh
+        window.location.href = '/';
       }
     });
   };

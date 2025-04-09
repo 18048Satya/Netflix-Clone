@@ -49,7 +49,8 @@ const Navbar = () => {
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
       onSuccess: () => {
-        setLocation('/auth');
+        // Use window.location to force a full page refresh
+        window.location.href = '/auth';
       }
     });
   };
