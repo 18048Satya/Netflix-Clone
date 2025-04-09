@@ -1,8 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication routes
+  setupAuth(app);
+  
   // Movies API routes
   app.get("/api/movies", async (req, res) => {
     try {
@@ -60,8 +64,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // My List API routes
   app.get("/api/my-list", async (req, res) => {
     try {
-      // For demo purposes, we'll use a fixed user ID (1)
-      const userId = 1;
+      // Use authenticated user if available, otherwise fallback to user ID 1
+      const userId = req.isAuthenticated() ? (req.user?.id || 1) : 1;
       const myList = await storage.getMyList(userId);
       res.json(myList);
     } catch (error) {
@@ -70,6 +74,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/my-list", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Please log in to add movies to your list" });
+    }
+    
     try {
       const { movieId } = req.body;
       
@@ -77,8 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Movie ID is required" });
       }
       
-      // For demo purposes, we'll use a fixed user ID (1)
-      const userId = 1;
+      const userId = req.user?.id || 1;
       await storage.addToMyList(userId, movieId);
       res.json({ message: "Movie added to my list" });
     } catch (error) {
@@ -87,11 +94,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete("/api/my-list/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Please log in to remove movies from your list" });
+    }
+    
     try {
       const movieId = parseInt(req.params.id);
-      
-      // For demo purposes, we'll use a fixed user ID (1)
-      const userId = 1;
+      const userId = req.user?.id || 1;
       await storage.removeFromMyList(userId, movieId);
       res.json({ message: "Movie removed from my list" });
     } catch (error) {
@@ -102,8 +111,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Progress API routes
   app.get("/api/progress", async (req, res) => {
     try {
-      // For demo purposes, we'll use a fixed user ID (1)
-      const userId = 1;
+      // Use authenticated user if available, otherwise fallback to user ID 1
+      const userId = req.isAuthenticated() ? (req.user?.id || 1) : 1;
       const progressList = await storage.getProgressList(userId);
       res.json(progressList);
     } catch (error) {
@@ -112,6 +121,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/progress", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Please log in to save your progress" });
+    }
+    
     try {
       const { movieId, progressPercentage, lastWatched } = req.body;
       
@@ -119,8 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Movie ID, progress percentage, and last watched time are required" });
       }
       
-      // For demo purposes, we'll use a fixed user ID (1)
-      const userId = 1;
+      const userId = req.user?.id || 1;
       await storage.saveProgress(userId, movieId, progressPercentage, lastWatched);
       res.json({ message: "Progress saved" });
     } catch (error) {

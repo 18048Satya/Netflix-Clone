@@ -26,6 +26,7 @@ export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(userData: { username: string; password: string; avatarUrl?: string }): Promise<User>;
 }
 
 export class MemStorage implements IStorage {
@@ -199,6 +200,23 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(
       (user) => user.username.toLowerCase() === username.toLowerCase(),
     );
+  }
+
+  async createUser(userData: { username: string; password: string; avatarUrl?: string }): Promise<User> {
+    // Generate a new user ID (max ID + 1)
+    const maxId = Math.max(0, ...Array.from(this.users.keys()));
+    const newId = maxId + 1;
+    
+    const newUser: User = {
+      id: newId,
+      username: userData.username,
+      password: userData.password,
+      avatarUrl: userData.avatarUrl,
+      myList: [],
+    };
+    
+    this.users.set(newId, newUser);
+    return newUser;
   }
 }
 

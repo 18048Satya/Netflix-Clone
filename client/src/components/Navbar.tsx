@@ -1,8 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Search } from "lucide-react";
+import { Search, LogOut, LogIn, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useSearch } from "@/hooks/useSearch";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const NETFLIX_LOGO = () => (
   <svg className="w-28 md:w-32" viewBox="0 0 111 30" fill="#E50914">
@@ -10,13 +20,14 @@ const NETFLIX_LOGO = () => (
   </svg>
 );
 
-const USER_AVATAR = "https://occ-0-2794-2219.1.nflxso.net/dnm/api/v6/K6hjPJd6cR6FpVELC5Pd6ovHRSk/AAAABQnOnMxhb19v9lQZScL86ZpnI21__HC3npqH3Y3NP74wlq1gmRcQu2h8RL6-QbkghIqgMQwFMI1h_ohXWAG3f2gWcP3DyA.png";
+const DEFAULT_AVATAR = "https://occ-0-2794-2219.1.nflxso.net/dnm/api/v6/K6hjPJd6cR6FpVELC5Pd6ovHRSk/AAAABQnOnMxhb19v9lQZScL86ZpnI21__HC3npqH3Y3NP74wlq1gmRcQu2h8RL6-QbkghIqgMQwFMI1h_ohXWAG3f2gWcP3DyA.png";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [location, setLocation] = useLocation();
   const { searchQuery, setSearchQuery, handleSearch } = useSearch();
   const [showSearch, setShowSearch] = useState(false);
+  const { user, logoutMutation } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,6 +44,11 @@ const Navbar = () => {
       handleSearch();
       setLocation(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
+  };
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+    setLocation('/auth');
   };
 
   return (
@@ -55,6 +71,7 @@ const Navbar = () => {
           </nav>
         </div>
         <div className="flex items-center">
+          {/* Search */}
           {showSearch ? (
             <form onSubmit={onSearchSubmit} className="relative mr-4">
               <Input
@@ -78,9 +95,44 @@ const Navbar = () => {
               <Search className="h-5 w-5" />
             </button>
           )}
-          <div className="flex items-center">
-            <img src={USER_AVATAR} alt="User Profile" className="w-8 h-8 rounded" />
-          </div>
+
+          {/* Auth Actions */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="focus:outline-none">
+                  <img 
+                    src={user.avatarUrl || DEFAULT_AVATAR} 
+                    alt={user.username} 
+                    className="w-8 h-8 rounded" 
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-[#141414] border-gray-700">
+                <DropdownMenuLabel className="text-white">{user.username}</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuItem 
+                  className="text-[#E5E5E5] hover:text-white cursor-pointer focus:bg-gray-800"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex items-center">
+              <Link href="/auth">
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:text-[#E5E5E5] hover:bg-transparent mr-2"
+                >
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Login
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </header>
