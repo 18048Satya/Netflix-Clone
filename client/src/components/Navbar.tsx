@@ -42,6 +42,9 @@ const Navbar = () => {
   const { searchQuery, setSearchQuery, handleSearch } = useSearch();
   const [showSearch, setShowSearch] = useState(false);
   const { user, logoutMutation } = useAuth();
+  
+  // Check if we're on the auth page to hide certain elements
+  const isAuthPage = location === '/auth';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -158,29 +161,33 @@ const Navbar = () => {
         </div>
         
         <div className="flex items-center flex-shrink-0">
-          {/* Search */}
-          {showSearch ? (
-            <form onSubmit={onSearchSubmit} className="relative mr-4">
-              <Input
-                type="text"
-                placeholder="Search"
-                className="bg-black bg-opacity-50 border border-gray-600 text-white pl-8 pr-3 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#E50914] w-full max-w-[180px] md:max-w-none"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-                onBlur={() => {
-                  if (!searchQuery) setShowSearch(false);
-                }}
-              />
-              <Search className="h-4 w-4 text-gray-400 absolute left-2 top-1/2 transform -translate-y-1/2" />
-            </form>
-          ) : (
-            <button 
-              onClick={() => setShowSearch(true)} 
-              className="mr-4 text-white hover:text-gray-300 flex-shrink-0"
-            >
-              <Search className="h-5 w-5" />
-            </button>
+          {/* Search - Only show if not on auth page */}
+          {!isAuthPage && (
+            <>
+              {showSearch ? (
+                <form onSubmit={onSearchSubmit} className="relative mr-4">
+                  <Input
+                    type="text"
+                    placeholder="Search"
+                    className="bg-black bg-opacity-50 border border-gray-600 text-white pl-8 pr-3 py-1 rounded focus:outline-none focus:ring-1 focus:ring-[#E50914] w-full max-w-[180px] md:max-w-none"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                    onBlur={() => {
+                      if (!searchQuery) setShowSearch(false);
+                    }}
+                  />
+                  <Search className="h-4 w-4 text-gray-400 absolute left-2 top-1/2 transform -translate-y-1/2" />
+                </form>
+              ) : (
+                <button 
+                  onClick={() => setShowSearch(true)} 
+                  className="mr-4 text-white hover:text-gray-300 flex-shrink-0"
+                >
+                  <Search className="h-5 w-5" />
+                </button>
+              )}
+            </>
           )}
 
           {/* Auth Actions */}
@@ -241,17 +248,20 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex items-center">
-              <Link href="/auth" className="mr-2 flex-shrink-0">
-                <Button 
-                  variant="ghost" 
-                  className="text-white hover:text-[#E5E5E5] hover:bg-transparent px-3 py-1 h-auto min-w-0"
-                >
-                  <LogIn className="mr-2 h-4 w-4" />
-                  <span className="whitespace-nowrap">Login</span>
-                </Button>
-              </Link>
-            </div>
+            // Only show login button if not on auth page
+            !isAuthPage && (
+              <div className="flex items-center">
+                <Link href="/auth" className="mr-2 flex-shrink-0">
+                  <Button 
+                    variant="ghost" 
+                    className="text-white hover:text-[#E5E5E5] hover:bg-transparent px-3 py-1 h-auto min-w-0"
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    <span className="whitespace-nowrap">Login</span>
+                  </Button>
+                </Link>
+              </div>
+            )
           )}
         </div>
       </div>
