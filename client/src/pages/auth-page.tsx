@@ -67,13 +67,21 @@ const AuthPage = () => {
 
   // Handle login form submission
   const onLoginSubmit = async (data: LoginFormData) => {
-    loginMutation.mutate(data);
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        setLocation('/');
+      }
+    });
   };
 
   // Handle registration form submission
   const onRegisterSubmit = async (data: RegisterFormData) => {
     const { confirmPassword, ...userData } = data;
-    registerMutation.mutate(userData);
+    registerMutation.mutate(userData, {
+      onSuccess: () => {
+        setLocation('/');
+      }
+    });
   };
 
   if (isLoading) {

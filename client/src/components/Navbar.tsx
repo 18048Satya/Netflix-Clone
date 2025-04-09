@@ -55,18 +55,16 @@ const Navbar = () => {
     <header className={`fixed top-0 w-full z-50 transition-colors duration-300 ${isScrolled ? 'bg-[#141414]' : 'bg-gradient-to-b from-black to-transparent'}`}>
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="flex items-center">
-          <Link href="/">
-            <a className="cursor-pointer">
-              <NETFLIX_LOGO />
-            </a>
+          <Link href="/" className="cursor-pointer">
+            <NETFLIX_LOGO />
           </Link>
           <nav className="hidden md:flex ml-10">
             <ul className="flex">
-              <li className="mr-5"><Link href="/"><a className="text-white hover:text-[#E5E5E5]">Home</a></Link></li>
-              <li className="mr-5"><Link href="/?category=tv-shows"><a className="text-[#E5E5E5] hover:text-white">TV Shows</a></Link></li>
-              <li className="mr-5"><Link href="/?category=movies"><a className="text-[#E5E5E5] hover:text-white">Movies</a></Link></li>
-              <li className="mr-5"><Link href="/?category=new"><a className="text-[#E5E5E5] hover:text-white">New & Popular</a></Link></li>
-              <li><Link href="/?category=my-list"><a className="text-[#E5E5E5] hover:text-white">My List</a></Link></li>
+              <li className="mr-5"><Link href="/" className="text-white hover:text-[#E5E5E5]">Home</Link></li>
+              <li className="mr-5"><Link href="/?category=tv-shows" className="text-[#E5E5E5] hover:text-white">TV Shows</Link></li>
+              <li className="mr-5"><Link href="/?category=movies" className="text-[#E5E5E5] hover:text-white">Movies</Link></li>
+              <li className="mr-5"><Link href="/?category=new" className="text-[#E5E5E5] hover:text-white">New & Popular</Link></li>
+              <li><Link href="/?category=my-list" className="text-[#E5E5E5] hover:text-white">My List</Link></li>
             </ul>
           </nav>
         </div>
@@ -122,10 +120,10 @@ const Navbar = () => {
             </DropdownMenu>
           ) : (
             <div className="flex items-center">
-              <Link href="/auth">
+              <Link href="/auth" className="mr-2">
                 <Button 
                   variant="ghost" 
-                  className="text-white hover:text-[#E5E5E5] hover:bg-transparent mr-2"
+                  className="text-white hover:text-[#E5E5E5] hover:bg-transparent"
                 >
                   <LogIn className="mr-2 h-4 w-4" />
                   Login
