@@ -11,7 +11,7 @@ const corsOptions = {
   // Allow requests from any origin when in development
   // In production, you should specify the exact origins
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.ALLOWED_ORIGINS?.split(',') || 'https://your-production-frontend-domain.com'
+    ? process.env.ALLOWED_ORIGINS?.split(',') || 'https://netflix-clone-1-3ms0.onrender.com'
     : true,
   credentials: true, // Allow cookies and authentication headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
